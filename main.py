@@ -1,4 +1,4 @@
-import re
+
 from selenium import webdriver
 from selenium.common import TimeoutException, NoSuchElementException
 from selenium.webdriver import ActionChains
@@ -77,10 +77,11 @@ class LinkedInJobSearch:
                 EC.element_to_be_clickable(
                     (By.CSS_SELECTOR, '#searchFilter_timePostedRange, #searchFilter_timePostedRange-trigger')))
             time_filter.click()
-
+            past_week = '//*[@for="timePostedRange-r604800"]'
+            past_month = '//*[@for="timePostedRange-r2592000"]'
         # Locate the "Past Week" option using a relative XPath expression
             past_week_option = WebDriverWait(self.driver, 80).until(
-                EC.element_to_be_clickable((By.XPATH, '//*[@for="timePostedRange-r604800"]'))
+                EC.element_to_be_clickable((By.XPATH, past_month))
             )
 
             past_week_option.click()
@@ -102,7 +103,7 @@ class LinkedInJobSearch:
             exp_filter = WebDriverWait(self.driver, 20).until(
                 EC.element_to_be_clickable((By.ID, 'searchFilter_experience')))
             exp_filter.click()
-            for exp_level in ['experience-1', 'experience-2', 'experience-3']:
+            for exp_level in ['experience-1', 'experience-2', 'experience-3', 'experience-4']:
                 exp_option = WebDriverWait(self.driver, 20).until(
                     EC.element_to_be_clickable((By.XPATH, f'//*[@for="{exp_level}"]')))
                 exp_option.click()
@@ -115,87 +116,102 @@ class LinkedInJobSearch:
 
     def easy_Applying(self):
         try:
+            # Get total results
             total_results = WebDriverWait(self.driver, 10).until(
                 EC.presence_of_element_located((By.CLASS_NAME, "display-flex.t-12.t-black--light.t-normal"))
             )
             total_results_int = int(total_results.text.split(' ', 1)[0].replace(",", ""))
             print("Total results:", total_results_int)
-
             time.sleep(2)
-            # get results for the first page
-            current_page = self.driver.current_url
+
+            # Get results for the first page
             results = WebDriverWait(self.driver, 10).until(
                 EC.presence_of_all_elements_located((By.CLASS_NAME,
-                    "ember-view.jobs-search-results__list-item.occludable-update.p0.relative.scaffold-layout__list-item"))
+                                                     "ember-view.jobs-search-results__list-item.occludable-update.p0.relative.scaffold-layout__list-item"))
             )
-
+            print(results)
             time.sleep(2)
 
-            for result in results:
+            # Apply to jobs on the first page
+            self.apply_to_jobs(results)
+
+            # If there are more than 25 results, go through the remaining pages
+            if total_results_int > 25:
+                # Find the total number of pages
+                find_pages = self.driver.find_elements(By.CLASS_NAME, 'artdeco-pagination__indicator')
+                total_pages_int = len(find_pages)
+
+                # Iterate through each page
+                for page_num in range(2, total_pages_int + 1):
+                    try:
+                        # Click on the page number button
+                        page_button = WebDriverWait(self.driver, 10).until(
+                            EC.element_to_be_clickable((By.XPATH, f"//button[@aria-label='Page {page_num}']"))
+                        )
+                        page_button.click()
+                        print(f"Moving to page {page_num}...")
+                        time.sleep(2)
+
+                        # Get results for the current page
+                        results = WebDriverWait(self.driver, 10).until(
+                            EC.presence_of_all_elements_located((By.CLASS_NAME,
+                                                                 "ember-view.jobs-search-results__list-item.occludable-update.p0.relative.scaffold-layout__list-item"))
+                        )
+
+                        # Apply to jobs on the current page
+                        self.apply_to_jobs(results)
+                    except Exception as e:
+                        print(f"An error occurred on page {page_num}:", str(e))
+
+        except Exception as e:
+            print("An error occurred:", str(e))  # Print the specific error message
+
+    def apply_to_jobs(self, results):
+        for result in results:
+            try:
                 hover = ActionChains(self.driver).move_to_element(result)
                 hover.perform()
                 titles = result.find_elements(By.CLASS_NAME,
                                               'disabled.ember-view.job-card-container__link.job-card-list__title')
                 for title in titles:
                     self.submit_apply(title)
-
-            if total_results_int > 25:
-                time.sleep(2)
-
-                find_pages = self.driver.find_elements(By.CLASS_NAME,'artdeco-pagination__pages.artdeco-pagination__pages--number')
-                total_pages = find_pages[len(find_pages)-1].text
-                total_pages_int = int(re.sub(r"[^\d.]", "", total_pages))
-                get_last_page = self.driver.find_element(By.XPATH, "//button[@aria-label='Page "+str(total_pages_int)+"']")
-                get_last_page.send_keys(Keys.RETURN)
-                print(get_last_page)
-                time.sleep(2)
-                last_page = self.driver.current_url
-                total_jobs = int(last_page.split('start=', 1)[1])
-
-
-
-        except Exception as e:
-            print("An error occurred:", str(e))  # Print the specific error message
+            except Exception as e:
+                print("An error occurred while applying to a job:", str(e))
 
     def submit_apply(self, job_add):
         """This function submits the application for the job add found"""
-
-        print('You are applying to the position of: ', job_add.text)
-        job_add.click()
-        time.sleep(2)
-
         try:
-            in_apply = WebDriverWait(self.driver, 10).until(
-                EC.element_to_be_clickable((By.CLASS_NAME, 'jobs-apply-button.artdeco-button.artdeco-button--3.artdeco-button--primary.ember-view'))
-            )
-            in_apply.click()
-            print('Easy Apply button clicked')
-        except NoSuchElementException:
-            print('You already applied to this job, go to next...')
-            pass
-        time.sleep(1)
-        try:
-            submit = WebDriverWait(self.driver, 20).until(
-                EC.element_to_be_clickable((By.CLASS_NAME, 'artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view'))
-            )
-            submit.send_keys(Keys.RETURN)
-            time.sleep(2)
-            submit.send_keys(Keys.RETURN)
+            print('You are applying to the position of: ', job_add.text)
+            job_add.click()
             time.sleep(2)
 
-            review_button = WebDriverWait(self.driver, 20).until(
-                EC.element_to_be_clickable((By.CLASS_NAME, 'artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view'))
-            )
-            review_button.send_keys(Keys.RETURN)
-            time.sleep(2)
-            final_submit = WebDriverWait(self.driver,20).until(
-                EC.element_to_be_clickable((By.CLASS_NAME, 'artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view'))
-            )
-            final_submit.send_keys(Keys.RETURN)
+            try:
+                in_apply = WebDriverWait(self.driver, 10).until(
+                    EC.element_to_be_clickable((By.CLASS_NAME,
+                                                'jobs-apply-button.artdeco-button.artdeco-button--3.artdeco-button--primary.ember-view'))
+                )
+                in_apply.click()
+                print('Easy Apply button clicked')
+                time.sleep(1)
 
+                def submit_button():
+                    try:
+                        submit = self.driver.find_element(By.CLASS_NAME,
+                                                          'artdeco-button.artdeco-button--2.artdeco-button--primary.ember-view')
+                        submit.click()
+                        time.sleep(2)
 
-        # ... if not available, discard application and go to next
-        except NoSuchElementException:
+                    except NoSuchElementException:
+                        print('Submit button not found.')
+                        return  # Return immediately if submit button is not found
+
+                for _ in range(7):
+                    submit_button()
+
+            except NoSuchElementException:
+                print('You already applied to this job, go to next...')
+
+        except Exception as e:
             print('Not direct application, going to next...')
             try:
                 discard = WebDriverWait(self.driver, 10).until(
@@ -209,7 +225,11 @@ class LinkedInJobSearch:
                 discard_confirm.send_keys(Keys.RETURN)
                 time.sleep(1)
             except NoSuchElementException:
+                print('You already applied to this job, go to next...')
                 pass
+
+            except Exception:
+                print('Moving to next Job')
 
     def quit_driver(self):
         self.driver.quit()
@@ -217,8 +237,8 @@ class LinkedInJobSearch:
 def main():
     username = ''
     password = ''
-    job_search = 'Web Developer'
-    location = 'United States'
+    job_search = 'Web-developer'
+    location = 'Florida'
 
     linkedin_job_search = LinkedInJobSearch(username, password, job_search, location)
     linkedin_job_search.login()
