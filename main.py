@@ -99,7 +99,7 @@ class LinkedInJobSearch:
                 EC.element_to_be_clickable((By.ID, 'searchFilter_experience')))
             exp_filter.click()
             time.sleep(1)
-            for exp_level in ['experience-1', 'experience-2', 'experience-3', 'experience-4']:
+            for exp_level in ['experience-1', 'experience-2', 'experience-3']:
                 exp_option = WebDriverWait(self.driver, 20).until(
                     EC.element_to_be_clickable((By.XPATH, f'//*[@for="{exp_level}"]')))
                 exp_option.click()
@@ -130,8 +130,10 @@ class LinkedInJobSearch:
 
                 for page_num in range(1, total_pages_int + 1):
                     try:
+                        time.sleep(2)
                         page_button = WebDriverWait(self.driver, 20).until(
                             EC.element_to_be_clickable((By.XPATH, f"//button[@aria-label='Page {page_num}']")))
+                        time.sleep(1)  # Add a small delay before clicking the page button
                         page_button.click()
                         print(f"Moving to page {page_num}...")
                         time.sleep(2)
@@ -148,11 +150,10 @@ class LinkedInJobSearch:
                                 next_button.click()
                                 print("Moving to next set of pages...")
                                 time.sleep(2)
-                    except Exception:
-                        print(f"An error occurred on page {page_num}")
-
-        except Exception:
-            print("An error occurred:")
+                    except Exception as e:
+                        print(f"An error occurred on page {page_num}: {str(e)}")
+        except Exception as e:
+            print("An error occurred:", str(e))
 
     def apply_to_jobs(self, results):
         for result in results:
@@ -163,6 +164,7 @@ class LinkedInJobSearch:
                                               'disabled.ember-view.job-card-container__link.job-card-list__title')
                 time.sleep(1)
                 for title in titles:
+                    time.sleep(2)
                     self.submit_apply(title)
             except Exception as e:
                 print("An error occurred while applying to a job:", str(e))
@@ -227,6 +229,7 @@ class LinkedInJobSearch:
             else:
                 print("Checking Progress Bar.")
 
+            time.sleep(1)
             if initial_results_texts == updated_results_texts:
                 print('No changes occurred after clicking submit. Stopping the application process.')
                 return  # Exit the function if no changes occurred
@@ -238,8 +241,8 @@ class LinkedInJobSearch:
 def main():
     username = ''
     password = ''
-    job_search = 'Software Developer'
-    location = ''
+    job_search = 'Software developer'
+    location = 'North Carolina'
 
     linkedin_job_search = LinkedInJobSearch(username, password, job_search, location)
     linkedin_job_search.login()
