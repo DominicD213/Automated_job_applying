@@ -48,6 +48,8 @@ class LinkedInJobSearch:
             search_bar_job.send_keys(self.job_search)
             search_bar_job.send_keys(Keys.RETURN)
 
+            time.sleep(1)
+
             location_search_bar = WebDriverWait(self.driver, 20).until(
                 EC.presence_of_element_located((By.XPATH, '//*[@aria-label="City, state, or zip code"]')))
             location_search_bar.click()
@@ -55,6 +57,7 @@ class LinkedInJobSearch:
             location_search_bar.send_keys(self.location)
             location_search_bar.send_keys(Keys.RETURN)
             print('Search bar clicked')
+            time.sleep(2)
 
         except Exception:
             print("Error locating or interacting with the job search bar:")
@@ -67,7 +70,7 @@ class LinkedInJobSearch:
         except Exception:
             print('Easy apply button not selected.')
 
-        time.sleep(2)
+        time.sleep(5)
 
         try:
             print("Clicking on Time Posted filter...")
@@ -79,7 +82,7 @@ class LinkedInJobSearch:
             past_month = '//*[@for="timePostedRange-r2592000"]'
             time.sleep(1)
             past_week_option = WebDriverWait(self.driver, 20).until(
-                EC.element_to_be_clickable((By.XPATH, past_week)))
+                EC.element_to_be_clickable((By.XPATH, past_month)))
             past_week_option.click()
             sumbition_filter = WebDriverWait(self.driver, 20).until(
                 EC.element_to_be_clickable((By.XPATH, '//*[@data-control-name="filter_show_results"]')))
@@ -92,7 +95,7 @@ class LinkedInJobSearch:
         except Exception as e:
             print("Error interacting with the time posted filter:", e)
 
-        time.sleep(2)
+        time.sleep(5)
         try:
             print("Clicking on Experience Level filter...")
             exp_filter = WebDriverWait(self.driver, 20).until(
@@ -128,30 +131,31 @@ class LinkedInJobSearch:
                 find_pages = self.driver.find_elements(By.CLASS_NAME, 'artdeco-pagination__indicator')
                 total_pages_int = len(find_pages)
 
-                for page_num in range(1, total_pages_int + 1):
+                for page_num in range(2, total_pages_int + 1):
                     try:
                         time.sleep(2)
+                        page_button_xpath = f"//button[@aria-label='Page {page_num}']"
                         page_button = WebDriverWait(self.driver, 20).until(
-                            EC.element_to_be_clickable((By.XPATH, f"//button[@aria-label='Page {page_num}']")))
-                        time.sleep(1)  # Add a small delay before clicking the page button
-                        page_button.click()
+                            EC.element_to_be_clickable((By.XPATH, page_button_xpath))
+                        )
                         print(f"Moving to page {page_num}...")
+                        page_button.click()
                         time.sleep(2)
-
-                        results = WebDriverWait(self.driver, 20).until(
-                            EC.presence_of_all_elements_located((By.CLASS_NAME,
-                                                                 "ember-view.jobs-search-results__list-item.occludable-update.p0.relative.scaffold-layout__list-item")))
-                        self.apply_to_jobs(results)
-
-                        # Check if there's a "Next" button available
-                        if total_results_int > 8 and page_num == total_pages_int:
-                            next_button = self.driver.find_element(By.CLASS_NAME, "artdeco-pagination__button--next")
-                            if next_button.is_enabled():
-                                next_button.click()
-                                print("Moving to next set of pages...")
-                                time.sleep(2)
                     except Exception as e:
-                        print(f"An error occurred on page {page_num}: {str(e)}")
+                        print(f"An error occurred while navigating to page {page_num}: {str(e)}")
+
+                    results = WebDriverWait(self.driver, 20).until(
+                        EC.presence_of_all_elements_located((By.CLASS_NAME,
+                                                                "ember-view.jobs-search-results__list-item.occludable-update.p0.relative.scaffold-layout__list-item")))
+                    self.apply_to_jobs(results)
+
+                    # Check if there's a "Next" button available
+                    if total_results_int > 8 and page_num == total_pages_int:
+                        next_button = self.driver.find_element(By.CLASS_NAME, "artdeco-pagination__button--next")
+                        if next_button.is_enabled():
+                            next_button.click()
+                            time.sleep(2)
+                            print("Moving to next set of pages...")
         except Exception as e:
             print("An error occurred:", str(e))
 
@@ -239,10 +243,10 @@ class LinkedInJobSearch:
         self.driver.quit()
 
 def main():
-    username = ''
-    password = ''
-    job_search = 'Software developer'
-    location = 'North Carolina'
+    username = 'dominicdigiacomo16@gmail.com'
+    password = 'Autumngrace1!'
+    job_search = ('Software Developer')
+    location = ''
 
     linkedin_job_search = LinkedInJobSearch(username, password, job_search, location)
     linkedin_job_search.login()
