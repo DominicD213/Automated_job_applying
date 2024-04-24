@@ -243,8 +243,8 @@ class LinkedInJobSearch:
         self.driver.quit()
 
 def main():
-    username = 'dominicdigiacomo16@gmail.com'
-    password = 'Autumngrace1!'
+    username = ''
+    password = ''
     job_search = ('Software Developer')
     location = ''
 
